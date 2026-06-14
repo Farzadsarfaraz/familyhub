@@ -4,6 +4,13 @@ import { ApiError } from '@/types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api';
 
+// Registered by auth.store — called when a token refresh fails so Zustand state
+// is cleared without creating a circular import (auth.store → api, not api → auth.store).
+let _onAuthFailure: (() => void) | null = null;
+export function setAuthFailureCallback(fn: () => void): void {
+  _onAuthFailure = fn;
+}
+
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
@@ -38,6 +45,7 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
+        _onAuthFailure?.();
       }
     }
     return Promise.reject(error);

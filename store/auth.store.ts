@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '@/lib/api';
+import api, { setAuthFailureCallback } from '@/lib/api';
 import { storage } from '@/lib/storage';
 import { parseApiError } from '@/lib/errors';
 import { toast } from '@/store/toast.store';
@@ -88,3 +88,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   clearError: () => set({ error: null }),
 }));
+
+// Wire up the API interceptor so a failed token refresh triggers an automatic
+// logout. Storage is already cleared by the interceptor; we only need to reset
+// Zustand state here (calling logout() again would fire another API request).
+setAuthFailureCallback(() => {
+  useAuthStore.setState({ user: null, tokens: null, error: null });
+});
