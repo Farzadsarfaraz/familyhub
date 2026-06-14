@@ -18,13 +18,14 @@ export class GoalsService {
   }
 
   async create(familyId: string, userId: string, data: {
-    title: string; description?: string; type?: GoalType;
+    title: string; description?: string; emoji?: string; type?: GoalType;
     targetDate?: string; assignedTo?: string;
   }) {
     return this.prisma.goal.create({
       data: {
         title:       data.title,
         description: data.description,
+        emoji:       data.emoji,
         type:        data.type ?? 'FAMILY',
         targetDate:  data.targetDate ? new Date(data.targetDate) : undefined,
         assignedTo:  data.assignedTo,
@@ -35,7 +36,7 @@ export class GoalsService {
     });
   }
 
-  async update(id: string, data: Partial<{ title: string; description: string; status: GoalStatus; progress: number; targetDate: string }>) {
+  async update(id: string, data: Partial<{ title: string; description: string; emoji: string; status: GoalStatus; progress: number; targetDate: string }>) {
     const goal = await this.prisma.goal.findUnique({ where: { id } });
     if (!goal) throw new NotFoundException('Goal not found');
     const { targetDate, ...rest } = data;

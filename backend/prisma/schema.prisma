@@ -89,6 +89,12 @@ enum GoalStatus {
   PAUSED
 }
 
+enum GiftStatus {
+  IDEA
+  BOUGHT
+  WRAPPED
+}
+
 enum NotificationType {
   EVENT
   TASK
@@ -109,6 +115,9 @@ model User {
   avatar           String?
   pushToken        String?
   isVerified       Boolean   @default(false)
+  bloodType        String?
+  allergies        String[]
+  conditions       String[]
   verifyToken      String?
   resetToken       String?
   resetTokenExpiry DateTime?
@@ -179,6 +188,9 @@ model Family {
   mealPlans      MealPlan[]
   recipes        Recipe[]
   journalEntries JournalEntry[]
+  giftOccasions      GiftOccasion[]
+  emergencyContacts  EmergencyContact[]
+  nearbyResources    NearbyResource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -531,6 +543,7 @@ model Goal {
   id          String     @id @default(cuid())
   title       String
   description String?
+  emoji       String?
   type        GoalType   @default(FAMILY)
   status      GoalStatus @default(ACTIVE)
   progress    Int        @default(0)
@@ -611,12 +624,33 @@ model Pet {
   breed     String?
   birthDate DateTime?
   avatar    String?
+  weight    String?
+  color     String?
+  emoji     String?
+  nextVet   DateTime?
+  notes     String?
+
   familyId  String
-  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  medications PetMedication[]
 
   createdAt DateTime @default(now())
 
   @@index([familyId])
+}
+
+model PetMedication {
+  id       String    @id @default(cuid())
+  name     String
+  dose     String?
+  schedule String?
+  nextDue  DateTime?
+
+  petId String
+  pet   Pet    @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 }
 
 // ─── Documents ────────────────────────────────────────────────────────────────
@@ -744,6 +778,78 @@ model VoiceRecording {
   createdAt DateTime @default(now())
 
   @@index([authorId])
+}
+
+// ─── Gifts ────────────────────────────────────────────────────────────────────
+
+model GiftOccasion {
+  id        String   @id @default(cuid())
+  name      String
+  date      DateTime
+  budget    Float    @default(0)
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy String
+
+  gifts GiftItem[]
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+model GiftItem {
+  id     String     @id @default(cuid())
+  name   String
+  price  Float      @default(0)
+  store  String?
+  emoji  String?
+  status GiftStatus @default(IDEA)
+  url    String?
+  notes  String?
+
+  occasionId String
+  occasion   GiftOccasion @relation(fields: [occasionId], references: [id], onDelete: Cascade)
+  addedBy    String
+
+  createdAt DateTime @default(now())
+
+  @@index([occasionId])
+}
+
+// ─── Emergency ────────────────────────────────────────────────────────────────
+
+model EmergencyContact {
+  id       String  @id @default(cuid())
+  name     String
+  relation String
+  phone    String
+  emoji    String?
+  color    String?
+  priority Int     @default(0)
+
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+model NearbyResource {
+  id      String  @id @default(cuid())
+  name    String
+  emoji   String?
+  address String?
+  phone   String?
+
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────

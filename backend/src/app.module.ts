@@ -18,6 +18,9 @@ import { GoalsModule }         from './modules/goals/goals.module';
 import { TravelModule }        from './modules/travel/travel.module';
 import { DocumentsModule }     from './modules/documents/documents.module';
 import { AiModule }            from './modules/ai/ai.module';
+import { PetsModule }          from './modules/pets/pets.module';
+import { GiftsModule }         from './modules/gifts/gifts.module';
+import { EmergencyModule }     from './modules/emergency/emergency.module';
 
 @Module({
   imports: [
@@ -39,6 +42,9 @@ import { AiModule }            from './modules/ai/ai.module';
     TravelModule,
     DocumentsModule,
     AiModule,
+    PetsModule,
+    GiftsModule,
+    EmergencyModule,
   ],
   providers: [PrismaService],
   exports:   [PrismaService],
