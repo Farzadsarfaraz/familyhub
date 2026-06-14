@@ -1,11 +1,34 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller, Get, Post, Delete, Body, Param, Query, Req, Res,
+  UseGuards, UseInterceptors, UploadedFile, BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { MemoriesService } from './memories.service';
+import { CloudinaryService } from '../../common/services/cloudinary.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('memories')
 export class MemoriesController {
-  constructor(private memories: MemoriesService) {}
+  constructor(
+    private memories:   MemoriesService,
+    private cloudinary: CloudinaryService,
+  ) {}
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
+  async upload(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    if (!file) throw new BadRequestException('No file provided');
+    const mimeType     = file.mimetype;
+    const resourceType = mimeType.startsWith('video/') ? 'video' : 'image';
+    const result       = await this.cloudinary.uploadBuffer(file.buffer, 'familyhub/memories', resourceType);
+    const memory       = await this.memories.createMemory(req.user.familyId, req.user.id, {
+      mediaUrl:     result.secureUrl,
+      thumbnailUrl: result.thumbnailUrl,
+      mediaType:    resourceType === 'video' ? 'VIDEO' : 'PHOTO',
+    });
+    return { success: true, data: memory };
+  }
 
   @Get()
   async getMemories(@Req() req: any, @Query('albumId') albumId?: string) {

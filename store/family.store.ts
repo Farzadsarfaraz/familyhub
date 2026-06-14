@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import api from '@/lib/api';
+import { parseApiError } from '@/lib/errors';
 import { Family } from '@/types';
 
 interface FamilyStore {
@@ -7,12 +8,12 @@ interface FamilyStore {
   loading: boolean;
   error:   string | null;
 
-  fetchFamily:    () => Promise<void>;
-  createFamily:   (name: string) => Promise<void>;
-  joinFamily:     (code: string) => Promise<void>;
-  leaveFamily:    () => Promise<void>;
-  inviteMember:   (email: string) => Promise<string>;
-  removeMember:   (userId: string) => Promise<void>;
+  fetchFamily:  () => Promise<void>;
+  createFamily: (name: string) => Promise<Family>;
+  joinFamily:   (code: string) => Promise<Family>;
+  leaveFamily:  () => Promise<void>;
+  removeMember: (userId: string) => Promise<void>;
+  clearError:   () => void;
 }
 
 export const useFamilyStore = create<FamilyStore>((set) => ({
@@ -23,7 +24,7 @@ export const useFamilyStore = create<FamilyStore>((set) => ({
   fetchFamily: async () => {
     set({ loading: true });
     try {
-      const { data } = await api.get('/families/mine');
+      const { data } = await api.get('/families/me');
       set({ family: data.data, loading: false });
     } catch {
       set({ loading: false });
@@ -35,8 +36,10 @@ export const useFamilyStore = create<FamilyStore>((set) => ({
     try {
       const { data } = await api.post('/families', { name });
       set({ family: data.data, loading: false });
-    } catch (err: any) {
-      set({ error: err.response?.data?.message ?? 'Failed to create family', loading: false });
+      return data.data as Family;
+    } catch (err) {
+      const message = parseApiError(err);
+      set({ error: message, loading: false });
       throw err;
     }
   },
@@ -46,8 +49,10 @@ export const useFamilyStore = create<FamilyStore>((set) => ({
     try {
       const { data } = await api.post('/families/join', { inviteCode: code });
       set({ family: data.data, loading: false });
-    } catch (err: any) {
-      set({ error: err.response?.data?.message ?? 'Invalid invite code', loading: false });
+      return data.data as Family;
+    } catch (err) {
+      const message = parseApiError(err);
+      set({ error: message, loading: false });
       throw err;
     }
   },
@@ -55,24 +60,22 @@ export const useFamilyStore = create<FamilyStore>((set) => ({
   leaveFamily: async () => {
     set({ loading: true });
     try {
-      await api.post('/families/leave');
+      await api.delete('/families/me/leave');
       set({ family: null, loading: false });
-    } catch (err: any) {
-      set({ error: err.response?.data?.message, loading: false });
+    } catch (err) {
+      set({ error: parseApiError(err), loading: false });
+      throw err;
     }
   },
 
-  inviteMember: async (email) => {
-    const { data } = await api.post('/families/invite', { email });
-    return data.data.inviteLink as string;
-  },
-
   removeMember: async (userId) => {
-    await api.delete(`/families/members/${userId}`);
+    await api.delete(`/families/me/members/${userId}`);
     set((state) => ({
       family: state.family
-        ? { ...state.family, members: state.family.members.filter((m) => m.userId !== userId) }
+        ? { ...state.family, members: state.family.members.filter((m: any) => m.id !== userId) }
         : null,
     }));
   },
+
+  clearError: () => set({ error: null }),
 }));

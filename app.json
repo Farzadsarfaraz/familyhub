@@ -28,6 +28,20 @@
     "plugins": [
       "expo-router",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "FamilyHub needs camera access to capture memories.",
+          "microphonePermission": "FamilyHub needs microphone access to record videos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FamilyHub needs access to your photos to upload memories.",
+          "cameraPermission": "FamilyHub needs camera access to capture memories."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
