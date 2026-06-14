@@ -1,0 +1,765 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  PARENT
+  CHILD
+  GRANDPARENT
+  GUEST
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RecurrenceType {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum EventCategory {
+  PERSONAL
+  FAMILY
+  BIRTHDAY
+  APPOINTMENT
+  SCHOOL
+  TRAVEL
+  HOLIDAY
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  VOICE
+  FILE
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum FinanceCategory {
+  FOOD
+  TRANSPORT
+  HEALTH
+  EDUCATION
+  ENTERTAINMENT
+  UTILITIES
+  CLOTHING
+  SAVINGS
+  OTHER
+}
+
+enum GoalType {
+  FAMILY
+  PERSONAL
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+enum NotificationType {
+  EVENT
+  TASK
+  CHAT
+  BIRTHDAY
+  REMINDER
+  FAMILY
+  AI
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String
+  passwordHash     String
+  avatar           String?
+  pushToken        String?
+  isVerified       Boolean   @default(false)
+  verifyToken      String?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  refreshTokens    RefreshToken[]
+
+  familyId  String?
+  family    Family?  @relation(fields: [familyId], references: [id])
+  role      UserRole @default(PARENT)
+
+  // Relations
+  createdEvents    CalendarEvent[]
+  assignedTasks    Task[]          @relation("AssignedTasks")
+  createdTasks     Task[]          @relation("CreatedTasks")
+  sentMessages     Message[]
+  memories         Memory[]
+  memoryComments   MemoryComment[]
+  memoryLikes      MemoryLike[]
+  transactions     Transaction[]
+  medications      Medication[]
+  appointments     HealthAppointment[]
+  goals            Goal[]
+  notifications    Notification[]
+  journalEntries   JournalEntry[]
+  voiceRecordings  VoiceRecording[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([familyId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ─── Family ───────────────────────────────────────────────────────────────────
+
+model Family {
+  id         String   @id @default(cuid())
+  name       String
+  avatar     String?
+  inviteCode String   @unique @default(cuid())
+  members    User[]
+
+  events         CalendarEvent[]
+  tasks          Task[]
+  shoppingLists  ShoppingList[]
+  chatRooms      ChatRoom[]
+  memories       Memory[]
+  albums         Album[]
+  transactions   Transaction[]
+  budgets        Budget[]
+  savingsGoals   SavingsGoal[]
+  goals          Goal[]
+  trips          Trip[]
+  pets           Pet[]
+  documents      Document[]
+  inventoryItems InventoryItem[]
+  mealPlans      MealPlan[]
+  recipes        Recipe[]
+  journalEntries JournalEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([inviteCode])
+}
+
+// ─── Calendar ─────────────────────────────────────────────────────────────────
+
+model CalendarEvent {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  allDay      Boolean       @default(false)
+  category    EventCategory @default(PERSONAL)
+  color       String?
+  location    String?
+  recurrence  RecurrenceType @default(NONE)
+  reminders   Int[]
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy String
+  creator   User   @relation(fields: [createdBy], references: [id])
+
+  attendees EventAttendee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([startDate])
+}
+
+model EventAttendee {
+  eventId String
+  userId  String
+  event   CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+}
+
+// ─── Tasks ────────────────────────────────────────────────────────────────────
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  recurring   Boolean      @default(false)
+  recurrence  RecurrenceType @default(NONE)
+  points      Int          @default(5)
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  familyId   String
+  family     Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy  String
+  creator    User   @relation("CreatedTasks", fields: [createdBy], references: [id])
+  assignedTo String?
+  assignee   User?  @relation("AssignedTasks", fields: [assignedTo], references: [id])
+
+  comments TaskComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([assignedTo])
+  @@index([status])
+}
+
+model TaskComment {
+  id      String @id @default(cuid())
+  content String
+  taskId  String
+  userId  String
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// ─── Shopping ─────────────────────────────────────────────────────────────────
+
+model ShoppingList {
+  id       String @id @default(cuid())
+  name     String
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  items    ShoppingItem[]
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+}
+
+model ShoppingItem {
+  id       String  @id @default(cuid())
+  name     String
+  quantity Int     @default(1)
+  unit     String?
+  category String?
+  checked  Boolean @default(false)
+  emoji    String?
+
+  listId  String
+  list    ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  addedBy String
+
+  @@index([listId])
+}
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+
+model ChatRoom {
+  id       String @id @default(cuid())
+  name     String
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+  members  ChatRoomMember[]
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+model ChatRoomMember {
+  roomId String
+  userId String
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+}
+
+model Message {
+  id       String      @id @default(cuid())
+  content  String
+  type     MessageType @default(TEXT)
+  mediaUrl String?
+  replyTo  String?
+
+  roomId   String
+  room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId String
+  sender   User     @relation(fields: [senderId], references: [id])
+
+  reactions MessageReaction[]
+  readBy    MessageRead[]
+
+  createdAt DateTime @default(now())
+
+  @@index([roomId])
+  @@index([senderId])
+}
+
+model MessageReaction {
+  id        String  @id @default(cuid())
+  emoji     String
+  messageId String
+  userId    String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+}
+
+model MessageRead {
+  messageId String
+  userId    String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  readAt    DateTime @default(now())
+
+  @@id([messageId, userId])
+}
+
+// ─── Memories ─────────────────────────────────────────────────────────────────
+
+model Memory {
+  id           String    @id @default(cuid())
+  title        String?
+  description  String?
+  mediaUrl     String
+  thumbnailUrl String?
+  mediaType    MediaType @default(PHOTO)
+  takenAt      DateTime?
+
+  albumId    String?
+  album      Album?  @relation(fields: [albumId], references: [id])
+  familyId   String
+  family     Family  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploadedBy String
+  uploader   User    @relation(fields: [uploadedBy], references: [id])
+
+  comments  MemoryComment[]
+  likes     MemoryLike[]
+  tags      MemoryTag[]
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+  @@index([albumId])
+}
+
+model Album {
+  id       String   @id @default(cuid())
+  name     String
+  coverUrl String?
+  familyId String
+  family   Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  memories Memory[]
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+model MemoryComment {
+  id       String @id @default(cuid())
+  content  String
+  memoryId String
+  memory   Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model MemoryLike {
+  memoryId String
+  userId   String
+  memory   Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@id([memoryId, userId])
+}
+
+model MemoryTag {
+  memoryId String
+  userId   String
+  memory   Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@id([memoryId, userId])
+}
+
+// ─── Finance ──────────────────────────────────────────────────────────────────
+
+model Transaction {
+  id       String          @id @default(cuid())
+  title    String
+  amount   Float
+  type     TransactionType
+  category FinanceCategory @default(OTHER)
+  date     DateTime
+  note     String?
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy String
+  creator   User   @relation(fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+  @@index([date])
+}
+
+model Budget {
+  id       String          @id @default(cuid())
+  category FinanceCategory
+  limit    Float
+  spent    Float           @default(0)
+  month    String          // "2025-06"
+
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, category, month])
+  @@index([familyId])
+}
+
+model SavingsGoal {
+  id           String  @id @default(cuid())
+  name         String
+  targetAmount Float
+  savedAmount  Float   @default(0)
+  targetDate   DateTime?
+  emoji        String?
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy String
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+// ─── Health ───────────────────────────────────────────────────────────────────
+
+model Medication {
+  id        String   @id @default(cuid())
+  name      String
+  dosage    String
+  frequency String
+  times     String[]
+  active    Boolean  @default(true)
+
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model HealthAppointment {
+  id       String   @id @default(cuid())
+  title    String
+  doctor   String?
+  location String?
+  date     DateTime
+  notes    String?
+
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Vaccination {
+  id      String   @id @default(cuid())
+  name    String
+  date    DateTime
+  nextDue DateTime?
+  userId  String
+
+  @@index([userId])
+}
+
+// ─── Goals ────────────────────────────────────────────────────────────────────
+
+model Goal {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  type        GoalType   @default(FAMILY)
+  status      GoalStatus @default(ACTIVE)
+  progress    Int        @default(0)
+  targetDate  DateTime?
+
+  familyId   String
+  family     Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy  String
+  creator    User   @relation(fields: [createdBy], references: [id])
+  assignedTo String?
+
+  milestones Milestone[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  title       String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  goalId      String
+  goal        Goal      @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+// ─── Travel ───────────────────────────────────────────────────────────────────
+
+model Trip {
+  id          String   @id @default(cuid())
+  name        String
+  destination String
+  startDate   DateTime
+  endDate     DateTime
+  budget      Float?
+  coverImage  String?
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy String
+
+  itinerary   ItineraryItem[]
+  packingList PackingItem[]
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+model ItineraryItem {
+  id       String @id @default(cuid())
+  day      Int
+  time     String?
+  activity String
+  location String?
+  notes    String?
+  tripId   String
+  trip     Trip   @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model PackingItem {
+  id     String  @id @default(cuid())
+  name   String
+  packed Boolean @default(false)
+  qty    Int     @default(1)
+  tripId String
+  trip   Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+// ─── Pets ─────────────────────────────────────────────────────────────────────
+
+model Pet {
+  id        String    @id @default(cuid())
+  name      String
+  species   String
+  breed     String?
+  birthDate DateTime?
+  avatar    String?
+  familyId  String
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+// ─── Documents ────────────────────────────────────────────────────────────────
+
+model Document {
+  id       String @id @default(cuid())
+  name     String
+  fileUrl  String
+  mimeType String
+  size     Int
+  category String @default("other")
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploadedBy String
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+// ─── Inventory ────────────────────────────────────────────────────────────────
+
+model InventoryItem {
+  id              String    @id @default(cuid())
+  name            String
+  category        String    @default("other")
+  purchaseDate    DateTime?
+  purchasePrice   Float?
+  warrantyExpiry  DateTime?
+  notes           String?
+  imageUrl        String?
+
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+// ─── Meals ────────────────────────────────────────────────────────────────────
+
+model Recipe {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  imageUrl     String?
+  ingredients  String[]
+  instructions String[]
+  prepTime     Int      @default(0)
+  cookTime     Int      @default(0)
+  servings     Int      @default(4)
+  calories     Int?
+  category     String   @default("dinner")
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdBy String
+
+  createdAt DateTime @default(now())
+
+  @@index([familyId])
+}
+
+model MealPlan {
+  id       String @id @default(cuid())
+  weekOf   String // "2025-06-09"
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  dayMeals DayMeal[]
+
+  @@unique([familyId, weekOf])
+  @@index([familyId])
+}
+
+model DayMeal {
+  id         String   @id @default(cuid())
+  date       DateTime
+  breakfast  String?
+  lunch      String?
+  dinner     String?
+  snacks     String[]
+  mealPlanId String
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+}
+
+// ─── Journal ──────────────────────────────────────────────────────────────────
+
+model JournalEntry {
+  id       String @id @default(cuid())
+  title    String
+  content  String
+  mood     String?
+  imageUrl String?
+  tags     String[]
+  isPrivate Boolean @default(false)
+
+  familyId  String
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([authorId])
+}
+
+// ─── Voice ────────────────────────────────────────────────────────────────────
+
+model VoiceRecording {
+  id           String  @id @default(cuid())
+  title        String
+  audioUrl     String
+  duration     Int
+  transcript   String?
+  tags         String[]
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([authorId])
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id      String           @id @default(cuid())
+  type    NotificationType
+  title   String
+  body    String
+  data    Json?
+  read    Boolean          @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+}
