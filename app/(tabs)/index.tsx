@@ -199,7 +199,7 @@ export default function HomeScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.membersRow}>
               {members.map((m: any) => (
                 <TouchableOpacity key={m.id} style={styles.memberItem} activeOpacity={0.8}>
-                  <Avatar name={m.name} size="lg" src={m.avatar} />
+                  <Avatar name={m.name} size="lg" uri={m.avatar} />
                   <Text variant="caption" weight="medium" style={{ marginTop: 6 }} numberOfLines={1}>{m.name.split(' ')[0]}</Text>
                   <Text variant="caption" style={{ fontSize: 9, color: tokens.textTertiary }}>{roleLabel(m.role)}</Text>
                 </TouchableOpacity>

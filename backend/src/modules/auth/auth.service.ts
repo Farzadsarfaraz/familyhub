@@ -6,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
+import axios from 'axios';
+import * as jwt from 'jsonwebtoken';
 import { RegisterDto }      from './dto/register.dto';
 import { LoginDto }         from './dto/login.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -161,6 +163,89 @@ export class AuthService {
     });
 
     return { success: true, message: 'Email verified' };
+  }
+
+  // ─── Google OAuth ─────────────────────────────────────────────────────────
+
+  async googleLogin(accessToken: string) {
+    const { data } = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }).catch(() => { throw new UnauthorizedException('Invalid Google access token'); });
+
+    const { sub, email, name, picture } = data;
+    if (!email) throw new BadRequestException('No email returned from Google');
+
+    let user = await this.prisma.user.findFirst({
+      where: { OR: [{ googleId: sub }, { email: email.toLowerCase() }] },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email:        email.toLowerCase(),
+          name:         name || email.split('@')[0],
+          passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
+          isVerified:   true,
+          googleId:     sub,
+          avatar:       picture ?? null,
+        },
+      });
+    } else if (!user.googleId) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data:  { googleId: sub, isVerified: true, avatar: user.avatar ?? picture ?? null },
+      });
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email);
+    return { success: true, data: { user: this.sanitizeUser(user), ...tokens } };
+  }
+
+  // ─── Apple OAuth ──────────────────────────────────────────────────────────
+
+  async appleLogin(identityToken: string, fullName?: string) {
+    const header  = JSON.parse(Buffer.from(identityToken.split('.')[0], 'base64url').toString());
+    const { data: jwks } = await axios.get('https://appleid.apple.com/auth/keys')
+      .catch(() => { throw new UnauthorizedException('Could not fetch Apple public keys'); });
+
+    const jwk = jwks.keys.find((k: any) => k.kid === header.kid);
+    if (!jwk) throw new UnauthorizedException('Apple key not found');
+
+    const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
+    const pem       = publicKey.export({ type: 'spki', format: 'pem' }) as string;
+
+    let payload: any;
+    try {
+      payload = jwt.verify(identityToken, pem, { algorithms: ['RS256'] });
+    } catch {
+      throw new UnauthorizedException('Invalid Apple identity token');
+    }
+
+    const { sub, email } = payload;
+    if (!email && !sub) throw new BadRequestException('No user info in Apple token');
+
+    const lookupEmail = email?.toLowerCase();
+    let user = await this.prisma.user.findFirst({
+      where: { OR: [{ appleId: sub }, ...(lookupEmail ? [{ email: lookupEmail }] : [])] },
+    });
+
+    if (!user) {
+      if (!lookupEmail) throw new BadRequestException('Email required for first Apple sign-in');
+      user = await this.prisma.user.create({
+        data: {
+          email:        lookupEmail,
+          name:         fullName || lookupEmail.split('@')[0],
+          passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12),
+          isVerified:   true,
+          appleId:      sub,
+        },
+      });
+    } else if (!user.appleId) {
+      user = await this.prisma.user.update({ where: { id: user.id }, data: { appleId: sub, isVerified: true } });
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email);
+    return { success: true, data: { user: this.sanitizeUser(user), ...tokens } };
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────

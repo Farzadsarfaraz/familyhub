@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -73,8 +73,38 @@ export default function NotificationsScreen() {
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['notifications'] }); toast.success('All notifications marked as read'); },
   });
 
+  const deleteNotif = useMutation({
+    mutationFn: (id: string) => api.delete(`/notifications/${id}`),
+    onSuccess:  () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  function handleLongPress(n: Notification) {
+    Alert.alert(n.title, 'What would you like to do?', [
+      { text: 'Cancel', style: 'cancel' },
+      ...(!n.read ? [{ text: 'Mark as Read', onPress: () => markRead.mutate(n.id) }] : []),
+      { text: 'Delete', style: 'destructive', onPress: () => deleteNotif.mutate(n.id) },
+    ]);
+  }
+
   const unreadCount = notifications.filter(n => !n.read).length;
+  const readCount   = notifications.filter(n => n.read).length;
   const groups      = groupByDay(notifications);
+
+  function deleteAllRead() {
+    if (readCount === 0) return;
+    Alert.alert('Delete Read Notifications', `Delete all ${readCount} read notifications?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete All', style: 'destructive',
+        onPress: async () => {
+          const readIds = notifications.filter(n => n.read).map(n => n.id);
+          await Promise.all(readIds.map(id => api.delete(`/notifications/${id}`)));
+          qc.invalidateQueries({ queryKey: ['notifications'] });
+          toast.success('Cleared read notifications');
+        },
+      },
+    ]);
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: tokens.background }]}>
@@ -93,11 +123,16 @@ export default function NotificationsScreen() {
         </TouchableOpacity>
       </View>
 
-      {unreadCount > 0 && (
+      {(unreadCount > 0 || readCount > 0) && (
         <View style={[styles.unreadBanner, { backgroundColor: Colors.primary[50] }]}>
-          <Text variant="bodySmall" weight="semibold" style={{ color: Colors.primary[600] }}>
-            {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+          <Text variant="bodySmall" weight="semibold" style={{ color: Colors.primary[600], flex: 1 }}>
+            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}{readCount > 0 ? ` · ${readCount} read` : ''}
           </Text>
+          {readCount > 0 && (
+            <TouchableOpacity onPress={deleteAllRead}>
+              <Text variant="bodySmall" weight="semibold" style={{ color: Colors.error[500] }}>Clear read</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -124,9 +159,11 @@ export default function NotificationsScreen() {
                         styles.notifRow,
                         { borderBottomColor: tokens.border },
                         i < group.items.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth },
-                        !n.read && { backgroundColor: Colors.primary[50] + (tokens === tokens ? '22' : '11') },
+                        !n.read && { backgroundColor: Colors.primary[50] + '22' },
                       ]}
                       onPress={() => { if (!n.read) markRead.mutate(n.id); }}
+                      onLongPress={() => handleLongPress(n)}
+                      delayLongPress={400}
                       activeOpacity={0.75}
                     >
                       <View style={[styles.notifIcon, { backgroundColor: `${meta.color}18` }]}>

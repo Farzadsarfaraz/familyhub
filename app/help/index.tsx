@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, ScrollView, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager,
+  View, ScrollView, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, Linking, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -50,11 +50,31 @@ const FAQ = [
   },
 ];
 
-const CONTACT = [
-  { icon: 'mail-outline'      as IoniconName, label: 'Email Support',   sub: 'support@familyhub.app',     color: Colors.primary[500]  },
-  { icon: 'chatbubble-outline' as IoniconName, label: 'Live Chat',       sub: 'Available 9am–6pm',         color: '#10B981'             },
-  { icon: 'bug-outline'       as IoniconName, label: 'Report a Bug',    sub: 'Help us improve the app',   color: '#F59E0B'             },
-  { icon: 'star-outline'      as IoniconName, label: 'Rate the App',    sub: 'Leave us a review',         color: '#6366F1'             },
+const CONTACT: { icon: IoniconName; label: string; sub: string; color: string; onPress: () => void }[] = [
+  {
+    icon: 'mail-outline', label: 'Email Support', sub: 'support@familyhub.app', color: Colors.primary[500],
+    onPress: () => Linking.openURL('mailto:support@familyhub.app?subject=FamilyHub%20Support'),
+  },
+  {
+    icon: 'chatbubble-outline', label: 'Live Chat', sub: 'Opens in browser', color: '#10B981',
+    onPress: () => Linking.openURL('https://familyhub.app/chat'),
+  },
+  {
+    icon: 'bug-outline', label: 'Report a Bug', sub: 'bugs@familyhub.app', color: '#F59E0B',
+    onPress: () => Linking.openURL('mailto:bugs@familyhub.app?subject=Bug%20Report&body=Describe%20the%20bug%20here...'),
+  },
+  {
+    icon: 'star-outline', label: 'Rate the App', sub: 'Leave us a review', color: '#6366F1',
+    onPress: () => {
+      const url = Platform.OS === 'ios'
+        ? 'itms-apps://itunes.apple.com/app/id0000000000'
+        : 'market://details?id=com.familyhub.app';
+      Linking.canOpenURL(url).then(can => {
+        if (can) Linking.openURL(url);
+        else Alert.alert('App Store', 'Search "FamilyHub" in the App Store to leave a review.');
+      });
+    },
+  },
 ];
 
 export default function HelpScreen() {
@@ -123,6 +143,7 @@ export default function HelpScreen() {
           {CONTACT.map((c, i) => (
             <TouchableOpacity
               key={c.label}
+              onPress={c.onPress}
               style={[styles.contactRow, i < CONTACT.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: tokens.border }]}
               activeOpacity={0.75}
             >

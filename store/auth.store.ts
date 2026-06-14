@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import api, { setAuthFailureCallback } from '@/lib/api';
 import { storage } from '@/lib/storage';
 import { parseApiError } from '@/lib/errors';
@@ -18,6 +19,7 @@ interface AuthStore {
   refreshUser: () => Promise<void>;
   clearError:  () => void;
   hydrateAuth: () => Promise<void>;
+  setAuth:     (user: User, accessToken: string, refreshToken: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -76,6 +78,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     } catch { /* network errors on logout are ignorable */ }
     await storage.clear();
     set({ user: null, tokens: null, error: null });
+    router.replace('/(auth)/welcome' as any);
   },
 
   refreshUser: async () => {
@@ -87,6 +90,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  setAuth: async (user, accessToken, refreshToken) => {
+    await storage.set(storage.keys.USER, user);
+    await AsyncStorage.setItem(storage.keys.ACCESS_TOKEN, accessToken);
+    await AsyncStorage.setItem(storage.keys.REFRESH_TOKEN, refreshToken);
+    set({ user, tokens: { accessToken, refreshToken } });
+    toast.success(`Welcome, ${user.name}!`);
+  },
 }));
 
 // Wire up the API interceptor so a failed token refresh triggers an automatic
@@ -94,4 +105,5 @@ export const useAuthStore = create<AuthStore>((set) => ({
 // Zustand state here (calling logout() again would fire another API request).
 setAuthFailureCallback(() => {
   useAuthStore.setState({ user: null, tokens: null, error: null });
+  router.replace('/(auth)/welcome' as any);
 });

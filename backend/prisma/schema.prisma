@@ -115,6 +115,8 @@ model User {
   avatar           String?
   pushToken        String?
   isVerified       Boolean   @default(false)
+  googleId         String?   @unique
+  appleId          String?   @unique
   bloodType        String?
   allergies        String[]
   conditions       String[]
@@ -124,7 +126,7 @@ model User {
   refreshTokens    RefreshToken[]
 
   familyId  String?
-  family    Family?  @relation(fields: [familyId], references: [id])
+  family    Family?  @relation(fields: [familyId], references: [id], onDelete: SetNull)
   role      UserRole @default(PARENT)
 
   // Relations
@@ -217,7 +219,7 @@ model CalendarEvent {
   familyId  String
   family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdBy String
-  creator   User   @relation(fields: [createdBy], references: [id])
+  creator   User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   attendees EventAttendee[]
 
@@ -253,9 +255,9 @@ model Task {
   familyId   String
   family     Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdBy  String
-  creator    User   @relation("CreatedTasks", fields: [createdBy], references: [id])
+  creator    User   @relation("CreatedTasks", fields: [createdBy], references: [id], onDelete: Cascade)
   assignedTo String?
-  assignee   User?  @relation("AssignedTasks", fields: [assignedTo], references: [id])
+  assignee   User?  @relation("AssignedTasks", fields: [assignedTo], references: [id], onDelete: SetNull)
 
   comments TaskComment[]
 
@@ -343,7 +345,7 @@ model Message {
   roomId   String
   room     ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
   senderId String
-  sender   User     @relation(fields: [senderId], references: [id])
+  sender   User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   reactions MessageReaction[]
   readBy    MessageRead[]
@@ -385,11 +387,11 @@ model Memory {
   takenAt      DateTime?
 
   albumId    String?
-  album      Album?  @relation(fields: [albumId], references: [id])
+  album      Album?  @relation(fields: [albumId], references: [id], onDelete: SetNull)
   familyId   String
   family     Family  @relation(fields: [familyId], references: [id], onDelete: Cascade)
   uploadedBy String
-  uploader   User    @relation(fields: [uploadedBy], references: [id])
+  uploader   User    @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
 
   comments  MemoryComment[]
   likes     MemoryLike[]
@@ -420,7 +422,7 @@ model MemoryComment {
   memoryId String
   memory   Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
   userId   String
-  user     User   @relation(fields: [userId], references: [id])
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 }
@@ -429,7 +431,7 @@ model MemoryLike {
   memoryId String
   userId   String
   memory   Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
-  user     User   @relation(fields: [userId], references: [id])
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([memoryId, userId])
 }
@@ -456,7 +458,7 @@ model Transaction {
   familyId  String
   family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdBy String
-  creator   User   @relation(fields: [createdBy], references: [id])
+  creator   User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -552,7 +554,7 @@ model Goal {
   familyId   String
   family     Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdBy  String
-  creator    User   @relation(fields: [createdBy], references: [id])
+  creator    User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   assignedTo String?
 
   milestones Milestone[]
@@ -753,7 +755,7 @@ model JournalEntry {
   familyId  String
   family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   authorId  String
-  author    User   @relation(fields: [authorId], references: [id])
+  author    User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -773,7 +775,7 @@ model VoiceRecording {
   tags         String[]
 
   authorId String
-  author   User   @relation(fields: [authorId], references: [id])
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 

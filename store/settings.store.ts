@@ -4,10 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const STORAGE_KEY = 'app_settings';
 
 interface Settings {
-  compactMode:  boolean;
-  soundEnabled: boolean;
-  hapticsEnabled: boolean;
-  autoRefresh:  boolean;
+  compactMode:     boolean;
+  soundEnabled:    boolean;
+  hapticsEnabled:  boolean;
+  autoRefresh:     boolean;
+  profilePublic:   boolean;
+  shareActivity:   boolean;
 }
 
 interface SettingsStore extends Settings {
@@ -21,6 +23,8 @@ const DEFAULTS: Settings = {
   soundEnabled:   true,
   hapticsEnabled: true,
   autoRefresh:    true,
+  profilePublic:  true,
+  shareActivity:  true,
 };
 
 export const useSettingsStore = create<SettingsStore>((set, get) => ({

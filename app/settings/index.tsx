@@ -7,8 +7,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
-import { useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { queryClient } from '@/lib/queryClient';
 import { Text, Card, Badge } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { useSettingsStore } from '@/store/settings.store';
@@ -21,7 +21,6 @@ export default function SettingsScreen() {
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
   const { tokens, isDark } = useTheme();
-  const qc      = useQueryClient();
 
   const { compactMode, soundEnabled, hapticsEnabled, autoRefresh, update } = useSettingsStore();
 
@@ -51,6 +50,9 @@ export default function SettingsScreen() {
 
   async function toggleAutoRefresh(val: boolean) {
     await update({ autoRefresh: val });
+    queryClient.setDefaultOptions({
+      queries: { retry: 1, staleTime: 30_000, refetchInterval: val ? 30_000 : false },
+    });
   }
 
   async function clearCache() {
@@ -64,7 +66,7 @@ export default function SettingsScreen() {
           onPress: async () => {
             try {
               // Clear React Query in-memory cache
-              qc.clear();
+              queryClient.clear();
               // Remove any AsyncStorage cache keys (not auth/settings)
               const keys = await AsyncStorage.getAllKeys();
               const toRemove = keys.filter(k =>

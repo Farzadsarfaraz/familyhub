@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
 import { useSettingsStore } from '@/store/settings.store';
+import { queryClient } from '@/lib/queryClient';
 import { Colors } from '@/constants/theme';
 
 export default function Index() {
@@ -12,7 +13,13 @@ export default function Index() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    Promise.all([hydrateAuth(), hydrateSettings()]).finally(() => setReady(true));
+    Promise.all([hydrateAuth(), hydrateSettings()]).finally(() => {
+      const { autoRefresh } = useSettingsStore.getState();
+      queryClient.setDefaultOptions({
+        queries: { retry: 1, staleTime: 30_000, refetchInterval: autoRefresh ? 30_000 : false },
+      });
+      setReady(true);
+    });
   }, [hydrateAuth, hydrateSettings]);
 
   if (!ready) {

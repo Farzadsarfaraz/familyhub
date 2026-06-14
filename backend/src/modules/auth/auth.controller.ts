@@ -61,6 +61,18 @@ export class AuthController {
     return this.authService.changePassword(req.user.id, body.currentPassword, body.newPassword);
   }
 
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  googleLogin(@Body() body: { accessToken: string }) {
+    return this.authService.googleLogin(body.accessToken);
+  }
+
+  @Post('apple')
+  @HttpCode(HttpStatus.OK)
+  appleLogin(@Body() body: { identityToken: string; fullName?: string }) {
+    return this.authService.appleLogin(body.identityToken, body.fullName);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@Req() req: any) {
