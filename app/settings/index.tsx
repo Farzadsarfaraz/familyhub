@@ -1,51 +1,90 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
+import * as Haptics from 'expo-haptics';
+import { useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text, Card, Badge } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { useSettingsStore } from '@/store/settings.store';
+import { Colors, Spacing } from '@/constants/theme';
 import { toast } from '@/store/toast.store';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 export default function SettingsScreen() {
-  const insets     = useSafeAreaInsets();
-  const router     = useRouter();
+  const insets  = useSafeAreaInsets();
+  const router  = useRouter();
   const { tokens, isDark } = useTheme();
+  const qc      = useQueryClient();
 
-  // Local preference toggles (stored in AsyncStorage)
-  const [compactMode,   setCompactMode]   = useState(false);
-  const [soundEnabled,  setSoundEnabled]  = useState(true);
-  const [haptics,       setHaptics]       = useState(true);
-  const [autoRefresh,   setAutoRefresh]   = useState(true);
+  const { compactMode, soundEnabled, hapticsEnabled, autoRefresh, update } = useSettingsStore();
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
+  async function toggleSound(val: boolean) {
+    await update({ soundEnabled: val });
+    // Update the in-app notification handler immediately
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner:  true,
+        shouldShowList:    true,
+        shouldPlaySound:   val,
+        shouldSetBadge:    true,
+      }),
+    });
+  }
+
+  async function toggleHaptics(val: boolean) {
+    await update({ hapticsEnabled: val });
+    if (val) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+
+  async function toggleCompact(val: boolean) {
+    await update({ compactMode: val });
+  }
+
+  async function toggleAutoRefresh(val: boolean) {
+    await update({ autoRefresh: val });
+  }
 
   async function clearCache() {
-    Alert.alert('Clear Cache', 'This will clear locally cached data. You will need to reload app data.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear', style: 'destructive',
-        onPress: async () => {
-          try {
-            const keys = await AsyncStorage.getAllKeys();
-            const toRemove = keys.filter(k => k.startsWith('cache_') || k.startsWith('query_'));
-            if (toRemove.length) await AsyncStorage.multiRemove(toRemove);
-            toast.success('Cache cleared');
-          } catch {
-            toast.error('Failed to clear cache');
-          }
+    Alert.alert(
+      'Clear Cache',
+      'This clears all locally cached app data. Screens will reload fresh from the server.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear', style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear React Query in-memory cache
+              qc.clear();
+              // Remove any AsyncStorage cache keys (not auth/settings)
+              const keys = await AsyncStorage.getAllKeys();
+              const toRemove = keys.filter(k =>
+                !['accessToken', 'refreshToken', 'user', 'app_settings'].includes(k)
+              );
+              if (toRemove.length) await AsyncStorage.multiRemove(toRemove);
+              toast.success('Cache cleared — data will reload automatically');
+            } catch {
+              toast.error('Failed to clear cache');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <View style={[styles.root, { backgroundColor: tokens.background }]}>
-      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: tokens.surface, borderBottomColor: tokens.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={tokens.text} />
@@ -57,76 +96,77 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ padding: Spacing[4], paddingBottom: 60, gap: Spacing[5] }} showsVerticalScrollIndicator={false}>
 
         {/* Appearance */}
-        <SectionLabel label="APPEARANCE" />
+        <SectionLabel label="APPEARANCE" tokens={tokens} />
         <Card shadow="sm" padding={0}>
-          <SettingRow icon="moon-outline" label="Dark Mode" tokens={tokens}>
+          <Row icon="moon-outline" label="Dark Mode" tokens={tokens}>
             <Badge label={isDark ? 'System (On)' : 'System (Off)'} variant={isDark ? 'primary' : 'neutral'} size="sm" />
-          </SettingRow>
-          <SettingRow icon="resize-outline" label="Compact Mode" tokens={tokens} last>
+          </Row>
+          <Row icon="resize-outline" label="Compact Mode" tokens={tokens} last>
             <Switch
               value={compactMode}
-              onValueChange={setCompactMode}
+              onValueChange={toggleCompact}
               trackColor={{ false: tokens.border, true: Colors.primary[400] }}
               thumbColor="#fff"
             />
-          </SettingRow>
+          </Row>
         </Card>
 
         {/* Notifications */}
-        <SectionLabel label="NOTIFICATIONS" />
+        <SectionLabel label="NOTIFICATIONS" tokens={tokens} />
         <Card shadow="sm" padding={0}>
-          <SettingRow icon="volume-high-outline" label="Sound" tokens={tokens}>
+          <Row icon="volume-high-outline" label="Sound" tokens={tokens}
+            sub={soundEnabled ? 'Plays sound for incoming alerts' : 'Silent mode'}>
             <Switch
               value={soundEnabled}
-              onValueChange={setSoundEnabled}
+              onValueChange={toggleSound}
               trackColor={{ false: tokens.border, true: Colors.primary[400] }}
               thumbColor="#fff"
             />
-          </SettingRow>
-          <SettingRow icon="phone-portrait-outline" label="Haptic Feedback" tokens={tokens}>
+          </Row>
+          <Row icon="phone-portrait-outline" label="Haptic Feedback" tokens={tokens}
+            sub={hapticsEnabled ? 'Vibration on interactions' : 'No vibration'}>
             <Switch
-              value={haptics}
-              onValueChange={setHaptics}
+              value={hapticsEnabled}
+              onValueChange={toggleHaptics}
               trackColor={{ false: tokens.border, true: Colors.primary[400] }}
               thumbColor="#fff"
             />
-          </SettingRow>
-          <SettingRow icon="notifications-outline" label="Notification Preferences" tokens={tokens} onPress={() => router.push('/notifications' as any)} last />
+          </Row>
+          <Row icon="notifications-outline" label="Notification Preferences" tokens={tokens}
+            sub="View and manage notifications" onPress={() => router.push('/notifications' as any)} last />
         </Card>
 
-        {/* Data */}
-        <SectionLabel label="DATA & SYNC" />
+        {/* Data & Sync */}
+        <SectionLabel label="DATA & SYNC" tokens={tokens} />
         <Card shadow="sm" padding={0}>
-          <SettingRow icon="refresh-outline" label="Auto Refresh" tokens={tokens}>
+          <Row icon="refresh-outline" label="Auto Refresh" tokens={tokens}
+            sub={autoRefresh ? 'Data updates every 30 seconds' : 'Manual refresh only'}>
             <Switch
               value={autoRefresh}
-              onValueChange={setAutoRefresh}
+              onValueChange={toggleAutoRefresh}
               trackColor={{ false: tokens.border, true: Colors.primary[400] }}
               thumbColor="#fff"
             />
-          </SettingRow>
-          <SettingRow icon="cloud-download-outline" label="Refresh Interval" tokens={tokens}>
-            <Text variant="bodySmall" secondary>30 seconds</Text>
-          </SettingRow>
-          <SettingRow icon="trash-outline" label="Clear Cache" tokens={tokens} onPress={clearCache} last>
-            <Ionicons name="chevron-forward" size={16} color={tokens.textTertiary} />
-          </SettingRow>
+          </Row>
+          <Row icon="trash-outline" label="Clear Cache" tokens={tokens}
+            sub="Free up space and reload fresh data"
+            onPress={clearCache} last />
         </Card>
 
         {/* About */}
-        <SectionLabel label="ABOUT" />
+        <SectionLabel label="ABOUT" tokens={tokens} />
         <Card shadow="sm" padding={0}>
-          <SettingRow icon="information-circle-outline" label="Version" tokens={tokens}>
+          <Row icon="information-circle-outline" label="Version" tokens={tokens}>
             <Text variant="bodySmall" secondary>1.0.0 (1)</Text>
-          </SettingRow>
-          <SettingRow icon="code-outline" label="Build" tokens={tokens}>
+          </Row>
+          <Row icon="code-outline" label="Build" tokens={tokens}>
             <Text variant="bodySmall" secondary>Expo SDK 54</Text>
-          </SettingRow>
-          <SettingRow icon="globe-outline" label="API Server" tokens={tokens} last>
+          </Row>
+          <Row icon="globe-outline" label="API Server" tokens={tokens} last>
             <Text variant="bodySmall" secondary numberOfLines={1} style={{ maxWidth: 160 }}>
               {process.env.EXPO_PUBLIC_API_URL ?? 'localhost:3000'}
             </Text>
-          </SettingRow>
+          </Row>
         </Card>
 
       </ScrollView>
@@ -134,8 +174,7 @@ export default function SettingsScreen() {
   );
 }
 
-function SectionLabel({ label }: { label: string }) {
-  const { tokens } = useTheme();
+function SectionLabel({ label, tokens }: { label: string; tokens: any }) {
   return (
     <Text variant="label" secondary weight="semibold" style={{ letterSpacing: 0.8, marginBottom: -8 }}>
       {label}
@@ -143,10 +182,10 @@ function SectionLabel({ label }: { label: string }) {
   );
 }
 
-function SettingRow({
-  icon, label, tokens, onPress, last, children,
+function Row({
+  icon, label, sub, tokens, onPress, last, children,
 }: {
-  icon: IoniconName; label: string; tokens: any;
+  icon: IoniconName; label: string; sub?: string; tokens: any;
   onPress?: () => void; last?: boolean; children?: React.ReactNode;
 }) {
   return (
@@ -161,7 +200,10 @@ function SettingRow({
       <View style={[styles.rowIcon, { backgroundColor: tokens.surfaceAlt }]}>
         <Ionicons name={icon} size={18} color={tokens.textSecondary} />
       </View>
-      <Text variant="body" weight="medium" style={{ flex: 1, marginLeft: 14, color: tokens.text }}>{label}</Text>
+      <View style={{ flex: 1, marginLeft: 14 }}>
+        <Text variant="body" weight="medium" style={{ color: tokens.text }}>{label}</Text>
+        {sub && <Text variant="caption" secondary style={{ marginTop: 1 }}>{sub}</Text>}
+      </View>
       {children ?? (onPress ? <Ionicons name="chevron-forward" size={16} color={tokens.textTertiary} /> : null)}
     </TouchableOpacity>
   );
@@ -171,6 +213,6 @@ const styles = StyleSheet.create({
   root:    { flex: 1 },
   header:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
-  row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14 },
-  rowIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  row:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13 },
+  rowIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 });

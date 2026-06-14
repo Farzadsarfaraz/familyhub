@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
+import { useSettingsStore } from '@/store/settings.store';
 import { Colors } from '@/constants/theme';
 
 export default function Index() {
-  const hydrateAuth = useAuthStore((s) => s.hydrateAuth);
-  const user        = useAuthStore((s) => s.user);
+  const hydrateAuth    = useAuthStore((s) => s.hydrateAuth);
+  const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  const user           = useAuthStore((s) => s.user);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    hydrateAuth().finally(() => setReady(true));
-  }, [hydrateAuth]);
+    Promise.all([hydrateAuth(), hydrateSettings()]).finally(() => setReady(true));
+  }, [hydrateAuth, hydrateSettings]);
 
   if (!ready) {
     return (
