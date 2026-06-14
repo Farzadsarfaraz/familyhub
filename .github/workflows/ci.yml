@@ -131,7 +131,20 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: production
     steps:
+      - name: Check deploy secrets
+        id: check
+        run: |
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️  DEPLOY_HOST secret not configured — skipping deployment"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+
       - name: Deploy via SSH
+        if: steps.check.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host:     ${{ secrets.DEPLOY_HOST }}
