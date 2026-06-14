@@ -195,9 +195,10 @@ model CalendarEvent {
   startDate   DateTime
   endDate     DateTime?
   allDay      Boolean       @default(false)
-  category    EventCategory @default(PERSONAL)
-  color       String?
-  location    String?
+  category       EventCategory @default(PERSONAL)
+  customCategory String?
+  color          String?
+  location       String?
   recurrence  RecurrenceType @default(NONE)
   reminders   Int[]
 

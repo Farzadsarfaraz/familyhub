@@ -4,7 +4,8 @@ import { EventCategory, RecurrenceType } from '@prisma/client';
 
 export interface CreateEventDto {
   title: string; description?: string; startDate: string; endDate?: string;
-  allDay?: boolean; category?: EventCategory; color?: string; location?: string;
+  allDay?: boolean; category?: EventCategory; customCategory?: string;
+  color?: string; location?: string;
   recurrence?: RecurrenceType; reminders?: number[]; attendeeIds?: string[];
 }
 

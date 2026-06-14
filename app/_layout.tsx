@@ -7,6 +7,21 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useColorScheme } from 'react-native';
 import { ToastContainer } from '@/components/ui/Toast';
+import * as Notifications from 'expo-notifications';
+import { setupNotificationChannel } from '@/lib/notifications';
+
+// Show notifications even when app is in foreground (SDK 54 API)
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+// Set up Android notification channel once at startup
+setupNotificationChannel();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -28,6 +28,14 @@
     "plugins": [
       "expo-router",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#3B6EFF",
+          "iosDisplayInForeground": true
+        }
+      ],
+      [
         "expo-camera",
         {
           "cameraPermission": "FamilyHub needs camera access to capture memories.",

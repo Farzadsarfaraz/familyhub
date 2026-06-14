@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
+import { ChatController } from './chat.controller';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { ChatService } from './chat.service';
       inject: [ConfigService],
     }),
   ],
-  providers: [ChatGateway, ChatService, PrismaService],
-  exports:   [ChatService],
+  controllers: [ChatController],
+  providers:   [ChatGateway, ChatService, PrismaService],
+  exports:     [ChatService],
 })
 export class ChatModule {}
