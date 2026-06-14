@@ -76,4 +76,8 @@ export class MemoriesService {
   async createAlbum(familyId: string, data: { name: string; coverUrl?: string }) {
     return this.prisma.album.create({ data: { name: data.name, coverUrl: data.coverUrl, familyId } });
   }
+
+  async deleteAlbum(id: string) {
+    await this.prisma.album.delete({ where: { id } });
+  }
 }

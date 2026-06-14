@@ -17,7 +17,11 @@ export class MemoriesController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
-  async upload(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  async upload(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+    @Body('albumId') albumId?: string,
+  ) {
     if (!file) throw new BadRequestException('No file provided');
     const mimeType     = file.mimetype;
     const resourceType = mimeType.startsWith('video/') ? 'video' : 'image';
@@ -26,6 +30,7 @@ export class MemoriesController {
       mediaUrl:     result.secureUrl,
       thumbnailUrl: result.thumbnailUrl,
       mediaType:    resourceType === 'video' ? 'VIDEO' : 'PHOTO',
+      albumId:      albumId || undefined,
     });
     return { success: true, data: memory };
   }
@@ -41,6 +46,12 @@ export class MemoriesController {
   async createMemory(@Req() req: any, @Body() body: any) {
     const data = await this.memories.createMemory(req.user.familyId, req.user.id, body);
     return { success: true, data };
+  }
+
+  @Delete('albums/:id')
+  async deleteAlbum(@Param('id') id: string) {
+    await this.memories.deleteAlbum(id);
+    return { success: true };
   }
 
   @Delete(':id')
