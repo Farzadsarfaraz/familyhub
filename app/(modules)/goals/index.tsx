@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text, Card, Badge, ProgressBar, Chip } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
-import { Colors, ModuleColors, BorderRadius, Spacing } from '@/constants/theme';
+import { ModuleColors, Spacing } from '@/constants/theme';
 
 const C = ModuleColors.goals;
 

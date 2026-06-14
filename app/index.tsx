@@ -11,7 +11,7 @@ export default function Index() {
 
   useEffect(() => {
     hydrateAuth().finally(() => setReady(true));
-  }, []);
+  }, [hydrateAuth]);
 
   if (!ready) {
     return (

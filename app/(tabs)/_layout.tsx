@@ -5,7 +5,6 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { Colors, Typography } from '@/constants/theme';
-import { Text } from '@/components/ui';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 

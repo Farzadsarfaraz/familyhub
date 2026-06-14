@@ -17,7 +17,7 @@ const OCCASIONS = [
   { id: 'anniversary', label: 'Anniversary 💍',         date: 'Sep 1',  daysLeft: 79, budget: 300, spent: 0 },
 ];
 
-const GIFTS: Record<string, Array<{ name: string; price: number; store: string; emoji: string; status: 'idea' | 'bought' | 'wrapped' }>> = {
+const GIFTS: Record<string, { name: string; price: number; store: string; emoji: string; status: 'idea' | 'bought' | 'wrapped' }[]> = {
   'emma-bday': [
     { name: 'LEGO Hogwarts Castle',       price: 129.99, store: 'Amazon',       emoji: '🏰', status: 'idea'   },
     { name: 'Art Supply Kit',             price: 34.99,  store: 'Michaels',     emoji: '🎨', status: 'idea'   },

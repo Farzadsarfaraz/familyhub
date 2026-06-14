@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, StyleSheet,
   Share, Alert, TextInput, ActivityIndicator,
@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Text, Card, Avatar, Badge, Button } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { Colors, BorderRadius, Spacing } from '@/constants/theme';
@@ -17,13 +17,6 @@ import { parseApiError } from '@/lib/errors';
 import { toast } from '@/store/toast.store';
 
 type Mode = 'home' | 'create' | 'join';
-
-const roleColor: Record<string, string> = {
-  PARENT:      Colors.primary[500],
-  CHILD:       Colors.success[500],
-  GRANDPARENT: Colors.warning[500],
-  GUEST:       Colors.neutral[400],
-};
 
 export default function FamilyScreen() {
   const router  = useRouter();

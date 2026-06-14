@@ -229,7 +229,6 @@ export default function HomeScreen() {
 }
 
 function SectionTitle({ title, onAction, actionLabel }: { title: string; onAction?: () => void; actionLabel?: string }) {
-  const { tokens } = useTheme();
   return (
     <View style={sectionStyles.row}>
       <Text variant="h4" weight="bold">{title}</Text>

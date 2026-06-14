@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Image } from 'expo-image';
-import { Colors, BorderRadius } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 
 type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 

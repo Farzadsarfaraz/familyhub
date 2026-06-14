@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, BorderRadius } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 
 interface Props {
   progress:    number;   // 0-100
@@ -33,7 +33,7 @@ export function ProgressBar({
     } else {
       anim.setValue(clamped);
     }
-  }, [progress]);
+  }, [progress, anim, animated]);
 
   const width = anim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
 

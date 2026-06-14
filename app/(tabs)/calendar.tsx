@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, ScrollView, StyleSheet, TouchableOpacity, Modal,
   TextInput, Switch, Alert, ActivityIndicator,
@@ -167,7 +167,7 @@ export default function CalendarScreen() {
     enabled: hasFamilyId,
   });
 
-  const events = data ?? [];
+  const events = useMemo(() => data ?? [], [data]);
   const eventsForDay = useCallback(
     (d: Date) => events.filter(e => isSameDay(new Date(e.startDate), d)),
     [events],

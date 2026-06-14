@@ -39,6 +39,7 @@ function ToastItem({ id, type, message, title }: { id: string; type: ToastType; 
 
     const timer = setTimeout(() => dismiss(), 4000);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const dismiss = () => {

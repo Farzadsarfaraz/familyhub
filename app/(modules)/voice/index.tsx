@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Text, Card, Badge } from '@/components/ui';
+import { Text, Card } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { Colors, ModuleColors, BorderRadius, Spacing } from '@/constants/theme';
 

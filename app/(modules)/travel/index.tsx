@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -10,7 +10,6 @@ import { useTheme } from '@/hooks/useTheme';
 import { Colors, ModuleColors, BorderRadius, Spacing } from '@/constants/theme';
 
 const C = ModuleColors.travel;
-const { width } = Dimensions.get('window');
 
 const TRIPS = [
   {
@@ -45,7 +44,7 @@ const TRIPS = [
 export default function TravelScreen() {
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
-  const { tokens, isDark } = useTheme();
+  const { tokens } = useTheme();
   const [selected, setSelected] = useState(TRIPS[0]);
 
   return (

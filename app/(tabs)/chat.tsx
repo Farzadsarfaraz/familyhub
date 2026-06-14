@@ -143,7 +143,7 @@ export default function ChatScreen() {
       }
       if (typingTimer.current) clearTimeout(typingTimer.current);
     };
-  }, [hasFamilyId]);
+  }, [hasFamilyId, user?.id]);
 
   // ── Send ───────────────────────────────────────────────────────────────────
   function sendMessage() {

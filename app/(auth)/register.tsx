@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Text, Button, Input, Divider } from '@/components/ui';
+import { Text, Button, Input } from '@/components/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';

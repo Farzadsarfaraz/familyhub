@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, Switch } from 'react-native';
-import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Text, Card, Avatar, Badge, Button } from '@/components/ui';
+import { Text, Card, Avatar, Badge } from '@/components/ui';
 import { useAuthStore } from '@/store/auth.store';
 import { useTheme } from '@/hooks/useTheme';
-import { Colors, ModuleColors, BorderRadius, Spacing } from '@/constants/theme';
+import { Colors, BorderRadius, Spacing } from '@/constants/theme';
 
 export default function ProfileScreen() {
   const router  = useRouter();

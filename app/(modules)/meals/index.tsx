@@ -173,7 +173,7 @@ export default function MealsScreen() {
       setSavingSlot(false);
     }
   }
-  function useRecipeForSlot(recipe: Recipe) {
+  function applyRecipeToSlot(recipe: Recipe) {
     setSlotValue(recipe.name);
   }
 
@@ -324,7 +324,7 @@ export default function MealsScreen() {
                           backgroundColor: slotValue === r.name ? C.primary + '18' : tokens.surfaceAlt,
                           borderColor:     slotValue === r.name ? C.primary : tokens.border,
                         }]}
-                        onPress={() => useRecipeForSlot(r)}
+                        onPress={() => applyRecipeToSlot(r)}
                       >
                         <Text style={{ fontSize: 20, marginRight: 10 }}>{CAT_EMOJI[r.category] ?? '🍽️'}</Text>
                         <View style={{ flex: 1 }}>
