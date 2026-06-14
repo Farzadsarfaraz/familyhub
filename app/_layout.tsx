@@ -43,8 +43,12 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)"    options={{ animation: 'fade' }} />
             <Stack.Screen name="(tabs)"    options={{ animation: 'fade' }} />
             <Stack.Screen name="(modules)" options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="profile/index" options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
-            <Stack.Screen name="family/index"  options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="profile/index"       options={{ animation: 'slide_from_bottom', presentation: 'modal' }} />
+            <Stack.Screen name="family/index"        options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="settings/index"      options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="notifications/index" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="privacy/index"       options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="help/index"          options={{ animation: 'slide_from_right' }} />
           </Stack>
           <ToastContainer />
         </QueryClientProvider>
