@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { FinancesService } from './finances.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -48,6 +48,12 @@ export class FinancesController {
   @Post('savings')
   async createSavingsGoal(@Req() req: any, @Body() body: any) {
     const data = await this.finances.createSavingsGoal(req.user.familyId, req.user.id, body);
+    return { success: true, data };
+  }
+
+  @Patch('savings/:id')
+  async updateSavingsGoal(@Param('id') id: string, @Body() body: any) {
+    const data = await this.finances.updateSavingsGoal(id, body);
     return { success: true, data };
   }
 
